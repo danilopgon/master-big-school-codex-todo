@@ -22,6 +22,8 @@ export default function TodoFilters({
   onFilterChange,
   onSortChange,
 }: TodoFiltersProps) {
+  const sortId = "todo-sort";
+
   return (
     <div className="flex flex-col gap-3 border-4 border-black bg-white p-3">
       <div className="grid grid-cols-3 gap-2">
@@ -44,8 +46,11 @@ export default function TodoFilters({
       </div>
 
       <div className="flex items-center gap-2">
-        <span className="font-mono text-xs uppercase">Sort</span>
+        <label htmlFor={sortId} className="font-mono text-xs uppercase">
+          Sort
+        </label>
         <select
+          id={sortId}
           value={sort}
           onChange={(event) => onSortChange(event.target.value as Sort)}
           className="appearance-none border-2 border-black bg-white px-3 py-2 font-mono text-xs uppercase focus:outline-none"

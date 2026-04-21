@@ -13,7 +13,13 @@ export default function TodoInput({ onAddTodo }: TodoInputProps) {
 
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    onAddTodo(text, priority);
+
+    const trimmedText = text.trim();
+    if (!trimmedText) {
+      return;
+    }
+
+    onAddTodo(trimmedText, priority);
     setText("");
     setPriority("medium");
   };

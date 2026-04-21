@@ -6,7 +6,48 @@ import type { Priority, Todo } from "@/types/todo";
 type Action =
   | { type: "ADD"; payload: { text: string; priority: Priority } }
   | { type: "TOGGLE"; payload: { id: string } }
-  | { type: "DELETE"; payload: { id: string } };
+  | { type: "DELETE"; payload: { id: string } }
+  | { type: "HYDRATE"; payload: { todos: Todo[] } };
+
+function isTodo(item: unknown): item is Todo {
+  if (typeof item !== "object" || item === null) {
+    return false;
+  }
+
+  const candidate = item as Partial<Todo>;
+
+  return (
+    typeof candidate.id === "string" &&
+    typeof candidate.text === "string" &&
+    typeof candidate.completed === "boolean" &&
+    (candidate.priority === "low" ||
+      candidate.priority === "medium" ||
+      candidate.priority === "high") &&
+    typeof candidate.createdAt === "number"
+  );
+}
+
+function loadStoredTodos(): Todo[] {
+  const stored = localStorage.getItem("todos");
+  if (!stored) {
+    return [];
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(stored);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed.filter(isTodo);
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      return [];
+    }
+
+    return [];
+  }
+}
 
 function reducer(state: Todo[], action: Action): Todo[] {
   switch (action.type) {
@@ -29,45 +70,19 @@ function reducer(state: Todo[], action: Action): Todo[] {
       );
     case "DELETE":
       return state.filter((todo) => todo.id !== action.payload.id);
+    case "HYDRATE":
+      return action.payload.todos;
     default:
       return state;
   }
 }
 
-function initialTodos(): Todo[] {
-  if (typeof window === "undefined") {
-    return [];
-  }
-
-  const stored = localStorage.getItem("todos");
-  if (!stored) {
-    return [];
-  }
-
-  try {
-    const parsed: unknown = JSON.parse(stored);
-
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed.filter(
-      (item): item is Todo =>
-        typeof item === "object" &&
-        item !== null &&
-        "id" in item &&
-        "text" in item &&
-        "completed" in item &&
-        "priority" in item &&
-        "createdAt" in item,
-    );
-  } catch {
-    return [];
-  }
-}
-
 export function useTodos() {
-  const [todos, dispatch] = useReducer(reducer, [], initialTodos);
+  const [todos, dispatch] = useReducer(reducer, []);
+
+  useEffect(() => {
+    dispatch({ type: "HYDRATE", payload: { todos: loadStoredTodos() } });
+  }, []);
 
   useEffect(() => {
     localStorage.setItem("todos", JSON.stringify(todos));
